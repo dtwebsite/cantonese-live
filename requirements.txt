@@ -1,0 +1,12 @@
+# 核心（必要）
+sherpa-onnx==1.13.8       # 語音辨識執行環境（ONNX Runtime，CPU）
+PyAudioWPatch==0.2.12.8   # WASAPI loopback 擷取（PyAudio 的 Windows 分支）
+soxr==1.1.0               # 高品質重採樣 48kHz -> 16kHz
+numpy==2.5.3
+opencc==1.4.2             # 簡體 -> 繁體
+
+# 選配：engine = "claude" 或 "lexicon+claude" 才需要
+anthropic>=0.49
+
+# 選配：要打包成免安裝資料夾分發到其他電腦才需要
+# pyinstaller>=6.0

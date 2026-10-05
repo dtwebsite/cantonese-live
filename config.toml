@@ -1,0 +1,106 @@
+# cantonese-live 設定檔
+#
+# 所有欄位都可以刪掉 —— 刪掉就用程式內建的預設值。
+# 改完直接重新啟動即可生效。
+
+[audio]
+# 要錄哪個播放裝置的輸出。
+#   ""        跟著 Windows 的「預設輸出裝置」走（建議，換耳機不用改設定）
+#   "BenQ"    比對裝置名稱的片段
+#   "12"      直接指定裝置索引
+# 用 run.ps1 -List 可以看到所有裝置。
+device = ""
+
+# 每次從音效卡取多少毫秒。調小一點延遲略低，但 CPU 負擔略高。
+block_ms = 64
+
+
+[vad]
+# 語音偵測靈敏度。0.5 是通用值；對方聲音很小或環境吵就調低到 0.35。
+threshold = 0.5
+
+# 靜音多久算一句講完。這是「延遲」和「切斷」的取捨：
+#   350  反應快，但對方講話中間停頓就會被切成兩句
+#   450  預設，平衡
+#   700  句子較完整，但要多等 0.25 秒才出字
+min_silence_ms = 450
+
+# 短於這個長度的聲音當雜音丟掉（鍵盤聲、咳嗽、提示音）
+min_speech_ms = 250
+
+# 一句最長切多久。對方講不停時強制斷句，避免一直不出字。
+max_speech_s = 18.0
+
+
+[asr]
+# 辨識語言。yue=粵語。即使設成 yue，對方突然講國語或英文也還是辨識得出來。
+language = "yue"
+
+# 辨識用幾個執行緒。這台是 6 核，留 4 給辨識、其餘給系統和會議軟體。
+num_threads = 4
+
+# 數字與標點正規化：「三百二十」→「320」
+use_itn = true
+
+# SenseVoice 輸出簡體字，這裡轉成繁體。
+#   "s2twp"  簡體→台灣正體，並轉換用詞（項目→專案、信息→資訊）  ← 預設
+#   "s2tw"   簡體→台灣正體，只轉字不轉用詞
+#   "s2t"    簡體→傳統繁體（香港/通用寫法）
+#   ""       不轉換，保持簡體
+traditional = "s2twp"
+
+
+[translate]
+# 翻譯引擎：
+#   "lexicon"         只用詞典 —— 免費、離線、不到 1ms。預設。
+#   "lexicon+claude"  詞典先擋，粵語味重的句子才送 API —— 省六到八成成本
+#   "claude"          每句都送 API —— 最準，約 $0.18 美元/小時
+#   "none"            不翻譯，只看辨識原文
+engine = "lexicon"
+
+# 以下只有 engine 含 claude 時才用到。
+# 需要先取得 API key（https://console.anthropic.com）並設定環境變數：
+#   $env:ANTHROPIC_API_KEY = "sk-ant-..."
+# 沒設定的話會自動降級回詞典，不會讓程式失敗。
+model = "claude-haiku-4-5"
+api_key_env = "ANTHROPIC_API_KEY"
+
+# 送幾句前文給 API，讓代名詞和主題保持連貫
+context_lines = 3
+timeout_s = 12.0
+
+# lexicon+claude 模式沒有門檻可調。它是看兩個直接訊號決定要不要送 API：
+# 詞典有沒有留下看不懂的粵語字，以及輸出是否命中已知的語序結構
+# （句末「先」、雙賓語後置、句首裸量詞）。判斷邏輯在
+# src/cantonese_live/translate/claude.py 的 needs_word_order_help()。
+# 每場會議結束時會印出實際送了幾句、花了多少錢。
+
+# 自訂詞表。格式一行一條：粵語<TAB>普通話，# 開頭是註解。
+# 開會時發現翻錯的詞就加進去，下次啟動生效。
+user_lexicon = "lexicon_user.txt"
+
+
+[ui]
+# "overlay" 置頂浮動視窗（開會用）
+# "console" 只用終端機文字（除錯用）
+# "both"    兩個都要
+mode = "overlay"
+
+font_family = "Microsoft JhengHei UI"
+font_size = 17            # 普通話譯文字級
+# 粵語原文字級。粵語書面文字大多看得懂，而且原文常常比譯文更貼近
+# 對方的原意，所以只比譯文小一點。設成和 font_size 一樣就是兩行等重。
+original_font_size = 15
+opacity = 0.90            # 視窗透明度 0.3 ~ 1.0
+width = 780
+height = 320
+max_entries = 40          # 視窗內保留幾句
+show_original = true      # 是否同時顯示粵語原文
+always_on_top = true
+
+
+[transcript]
+# 全程存逐字稿（Markdown 表格，含時間、原文、譯文）。
+# 每句立刻寫進磁碟，程式當掉也不會掉內容。
+enabled = true
+dir = "transcripts"
