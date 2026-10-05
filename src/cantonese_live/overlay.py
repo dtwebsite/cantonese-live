@@ -4,17 +4,18 @@
 沒有系統標題列，所以自己畫了一條可拖曳的頂欄和右下角的縮放把手。
 
 鍵盤：
-    Esc / Ctrl+Q   結束
-    Ctrl + / -     放大 / 縮小字級
-    Ctrl + 0       重設字級
-    F              切換是否顯示粵語原文
-    T              切換置頂
-    空白鍵         暫停／繼續捲動（想回看前面幾句時用）
+    Esc / Ctrl+Q（Mac 也可 ⌘Q）   結束
+    Ctrl + / -（Mac 也可 ⌘）       放大 / 縮小字級
+    Ctrl + 0                       重設字級
+    F                              切換是否顯示粵語原文
+    T                              切換置頂
+    空白鍵                         暫停／繼續捲動（想回看前面幾句時用）
 """
 
 from __future__ import annotations
 
 import queue
+import sys
 import tkinter as tk
 import tkinter.font as tkfont
 from collections import deque
@@ -148,7 +149,7 @@ class Overlay:
         grip.bind("<B1-Motion>", self._resize_move)
 
     def _apply_fonts(self) -> None:
-        family = self.cfg.font_family
+        family = self.cfg.resolved_font_family()
         small = max(8, self._font_size - (self.cfg.font_size
                                           - self.cfg.original_font_size))
         self._font_main = tkfont.Font(family=family, size=self._font_size)
@@ -178,6 +179,12 @@ class Overlay:
         r.bind("<t>", lambda _e: self._toggle_topmost())
         r.bind("<T>", lambda _e: self._toggle_topmost())
         r.bind("<space>", lambda _e: self._toggle_pause())
+        if sys.platform == "darwin":
+            r.bind("<Command-q>", lambda _e: self.close())
+            r.bind("<Command-plus>", lambda _e: self._bump_font(+1))
+            r.bind("<Command-equal>", lambda _e: self._bump_font(+1))
+            r.bind("<Command-minus>", lambda _e: self._bump_font(-1))
+            r.bind("<Command-Key-0>", lambda _e: self._reset_font())
         r.focus_force()
 
     def _drag_start(self, event: tk.Event) -> None:

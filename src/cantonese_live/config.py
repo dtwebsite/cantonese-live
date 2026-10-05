@@ -68,10 +68,21 @@ class TranslateConfig:
     user_lexicon: str = "lexicon_user.txt"  # 使用者自訂詞表（可選）
 
 
+def default_font_family(platform: str | None = None) -> str:
+    """各平台內建的繁體中文 UI 字型。"""
+    platform = platform or sys.platform
+    if platform == "win32":
+        return "Microsoft JhengHei UI"
+    if platform == "darwin":
+        return "PingFang TC"
+    return "TkDefaultFont"
+
+
 @dataclass
 class UiConfig:
     mode: str = "overlay"        # overlay | console | both
-    font_family: str = "Microsoft JhengHei UI"
+    # 空字串 = 自動：Windows 用 Microsoft JhengHei UI，macOS 用 PingFang TC。
+    font_family: str = ""
     font_size: int = 17
     # 粵語原文的字級。粵語書面文字大多看得懂，所以只比譯文小一點，
     # 不是壓到最小當註腳。設成跟 font_size 一樣就是兩行等重。
@@ -82,6 +93,9 @@ class UiConfig:
     max_entries: int = 40        # 視窗內保留幾句
     show_original: bool = True
     always_on_top: bool = True
+
+    def resolved_font_family(self, platform: str | None = None) -> str:
+        return self.font_family.strip() or default_font_family(platform)
 
 
 @dataclass

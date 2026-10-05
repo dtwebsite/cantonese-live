@@ -4,11 +4,12 @@
 # 改完直接重新啟動即可生效。
 
 [audio]
-# 要錄哪個播放裝置的輸出。
-#   ""        跟著 Windows 的「預設輸出裝置」走（建議，換耳機不用改設定）
+# 要錄哪個裝置的聲音。
+#   ""        自動：Windows 跟著「預設輸出裝置」走（換耳機不用改）；
+#             macOS 用 BlackHole（系統輸出要設成含 BlackHole 的多重輸出裝置）
 #   "BenQ"    比對裝置名稱的片段
 #   "12"      直接指定裝置索引
-# 用 run.ps1 -List 可以看到所有裝置。
+# 用 run.ps1 -List（Windows）或 ./run.sh --list-devices（macOS）可以看到所有裝置。
 device = ""
 
 # 每次從音效卡取多少毫秒。調小一點延遲略低，但 CPU 負擔略高。
@@ -86,7 +87,8 @@ user_lexicon = "lexicon_user.txt"
 # "both"    兩個都要
 mode = "overlay"
 
-font_family = "Microsoft JhengHei UI"
+# 字型。留空 = 自動（Windows 用 Microsoft JhengHei UI，macOS 用 PingFang TC）。
+font_family = ""
 font_size = 17            # 普通話譯文字級
 # 粵語原文字級。粵語書面文字大多看得懂，而且原文常常比譯文更貼近
 # 對方的原意，所以只比譯文小一點。設成和 font_size 一樣就是兩行等重。
