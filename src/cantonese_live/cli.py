@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 
 from .asr import AsrError, Recognizer
-from .audio import AudioError, list_loopback_devices, resolve_device
+from .audio import AudioError, list_loopback_devices, resolve_device, routing_hint, setup_help
 from .config import Config, load_config
 from .pipeline import Line, Pipeline
 from .translate import ENGINES
@@ -76,11 +76,10 @@ def _apply_overrides(cfg: Config, args: argparse.Namespace) -> None:
 def _cmd_list_devices() -> int:
     devices = list_loopback_devices()
     if not devices:
-        print("找不到任何 WASAPI loopback 裝置。")
-        print("請確認 Windows 音效設定裡至少有一個啟用的播放裝置。")
+        print(setup_help())
         return 1
 
-    print("可用的 loopback 裝置（錄的是這個裝置「播出去」的聲音）：\n")
+    print("可用的裝置（錄的是這個裝置的聲音）：\n")
     try:
         default = resolve_device("")
     except AudioError:
@@ -89,7 +88,13 @@ def _cmd_list_devices() -> int:
         mark = "  <- 預設" if default and d.index == default.index else ""
         print(f"  {d}{mark}")
     print("\n設定方式：在 config.toml 的 [audio] 填 device = \"名稱片段\" 或索引數字。")
-    print("留空（device = \"\"）表示自動跟著 Windows 的預設輸出裝置走。")
+    if sys.platform == "darwin":
+        print("留空（device = \"\"）表示自動使用 BlackHole。")
+        hint = routing_hint()
+        if hint:
+            print(f"\n注意：{hint}")
+    else:
+        print("留空（device = \"\"）表示自動跟著 Windows 的預設輸出裝置走。")
     return 0
 
 
@@ -100,6 +105,9 @@ def _cmd_self_test(cfg: Config) -> int:
     try:
         dev = resolve_device(cfg.audio.device)
         print(f"  OK  {dev}")
+        hint = routing_hint()
+        if hint:
+            print(f"  !!  {hint}")
     except AudioError as exc:
         print(f"  失敗  {exc}")
         ok = False
@@ -140,7 +148,8 @@ def _cmd_self_test(cfg: Config) -> int:
         print(f"  失敗  {type(exc).__name__}: {exc}")
         ok = False
 
-    print("\n" + ("全部正常，可以執行 run.ps1 開始使用。" if ok
+    run_cmd = "./run.sh" if sys.platform == "darwin" else "run.ps1"
+    print("\n" + (f"全部正常，可以執行 {run_cmd} 開始使用。" if ok
                   else "有項目失敗，請看上面的訊息。"))
     return 0 if ok else 1
 
@@ -260,6 +269,9 @@ def _run_console(cfg: Config) -> int:
     print(f"翻譯：{pipeline.translator.name}")
     if pipeline.transcript.path:
         print(f"逐字稿：{pipeline.transcript.path}")
+    hint = routing_hint()
+    if hint:
+        print(f"[注意] {hint}")
     print("\n開始收音。按 Ctrl+C 結束。\n")
 
     with pipeline:
@@ -316,6 +328,11 @@ def _run_overlay(cfg: Config, also_console: bool) -> int:
 
     pipeline_box["p"] = pipeline
     pipeline.start()
+
+    hint = routing_hint()
+    if hint:
+        overlay.status(hint.split("。")[0], "warn")
+        overlay.notice(hint)
 
     overlay.notice(f"收音：{pipeline.device.name}")
     overlay.notice(f"翻譯：{pipeline.translator.name}"
