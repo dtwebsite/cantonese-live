@@ -3,11 +3,12 @@
 開會時把對方說的**粵語**即時轉成文字並翻成**普通話**，疊在 Google Meet /
 Zoom 旁邊的置頂小視窗上看。
 
-- **只錄電腦播出去的聲音**（WASAPI loopback）—— 你自己的麥克風完全不會被錄到，
-  程式根本沒開啟任何輸入裝置
+- **只錄電腦播出去的聲音** —— Windows 用 WASAPI loopback，macOS 透過 BlackHole
+  虛擬裝置。你自己的麥克風完全不會被錄到
 - **純 CPU**，不需要顯示卡。在 i5-9400 上辨識速度是即時的 30 倍以上
 - **預設完全離線免費**，一句話也不會離開這台電腦
 - 整個資料夾可複製到其他電腦使用
+- **Windows 與 macOS 都能用**（macOS 需要一次性的 BlackHole 設定，見下）
 
 ```
 對方說話 → 喇叭輸出 → loopback 擷取 → VAD 斷句
@@ -18,7 +19,7 @@ Zoom 旁邊的置頂小視窗上看。
 
 ---
 
-## 安裝
+## 安裝（Windows）
 
 ```powershell
 cd cantonese-live
@@ -30,6 +31,45 @@ cd cantonese-live
 
 要同時裝 Claude 翻譯的相依套件：`.\setup.ps1 -WithClaude`
 
+## 安裝（macOS）
+
+```bash
+cd cantonese-live
+./setup.sh                  # 裝 Python 3.12（透過 uv）、BlackHole、套件、模型，然後自我檢查
+./setup.sh --with-claude    # 同時裝 Claude 翻譯的相依套件
+```
+
+Python 由 [uv](https://docs.astral.sh/uv/) 下載獨立版（含 Tk，不需 sudo，Intel 與 Apple
+Silicon 都支援）。BlackHole 透過 [Homebrew](https://brew.sh) 安裝，那一步會要求輸入
+macOS 密碼；沒有 Homebrew 的話腳本會告訴你去哪裡手動下載。
+
+### 為什麼 Mac 需要 BlackHole
+
+macOS 沒有提供「錄下喇叭正在播的聲音」的介面，所以借道
+[BlackHole](https://github.com/ExistentialAudio/BlackHole) 這個免費的虛擬音訊裝置：
+把系統輸出設成「多重輸出裝置」（喇叭 + BlackHole），系統聲音就同時送到喇叭和
+BlackHole，程式再從 BlackHole 錄音。
+
+`setup.sh` 跑完後要手動做一次（macOS 沒有命令列方式）：
+
+1. 打開「音訊 MIDI 設定」（Spotlight 搜 Audio MIDI Setup）
+2. 左下角 ＋ →「建立多重輸出裝置」
+3. 勾選你的喇叭（MacBook Pro的揚聲器）和 BlackHole 2ch
+4. 用 AirPods 開會的話，再建一個：AirPods + BlackHole 2ch（AirPods 要先連上）
+5. 改名成「會議（喇叭）」「會議（AirPods）」方便辨認
+
+開會前在選單列的音量圖示選對應的多重輸出裝置。Zoom 裡的喇叭選「與系統相同」；
+Google Meet 在瀏覽器裡跟系統走，不用另外設。
+
+程式啟動時會檢查系統輸出有沒有經過 BlackHole，沒有就在狀態列警告，
+不會默默顯示一片空白。
+
+**已知限制**
+
+- 選了多重輸出裝置後，鍵盤音量鍵會失效。先在「音訊 MIDI 設定」把音量調好，或用 AirPods 本身調。
+- AirPods 同時當麥克風時，藍牙會壓低對方聲音的取樣率；辨識仍可用，但比喇叭情境略差。
+- macOS 沒有免安裝打包版，用「複製資料夾 + `./setup.sh`」。
+
 ## 使用
 
 ```powershell
@@ -40,18 +80,30 @@ cd cantonese-live
 .\run.ps1 -File 會議錄音.wav       # 辨識錄音檔並產出逐字稿
 ```
 
+macOS 對應指令（參數直接交給程式）：
+
+```bash
+./run.sh                           # 開始（置頂浮動視窗）
+./run.sh --list-devices            # 列出可用的裝置
+./run.sh --self-test               # 檢查模型/裝置/翻譯器
+./run.sh --ui console              # 只用終端機文字
+./run.sh --file 會議錄音.wav        # 辨識錄音檔並產出逐字稿
+./run.sh --no-transcript           # 不留逐字稿
+```
+
 `-File` 吃的是 16-bit PCM wav。它一樣會寫逐字稿，所以如果哪天即時收音出問題，
 可以事後拿錄下來的檔案補跑一份（錄影檔先用 ffmpeg 轉成 wav：
 `ffmpeg -i 錄影.mp4 -ac 1 -ar 16000 會議錄音.wav`）。
 
 第一次在一台新電腦上用，建議先跑這個確認收音路徑正常：
 
-```powershell
-.\.venv\Scripts\python.exe tools\test_live_capture.py
+```
+.\.venv\Scripts\python.exe tools\test_live_capture.py    # Windows
+.venv/bin/python tools/test_live_capture.py              # macOS
 ```
 
-它會一邊播放範例音檔、一邊從喇叭輸出收音辨識。**喇叭或耳機不能靜音**，
-否則 loopback 收到的是無聲。
+它會一邊播放範例音檔、一邊收音辨識。Windows 上**喇叭或耳機不能靜音**，macOS 上
+**系統輸出必須是含 BlackHole 的多重輸出裝置**，否則收到的是無聲。
 
 ### 視窗操作
 
@@ -59,8 +111,8 @@ cd cantonese-live
 |---|---|
 | 拖曳頂欄 | 移動視窗 |
 | 拖右下角 `◢` | 縮放 |
-| `Esc` / `Ctrl+Q` | 結束 |
-| `Ctrl` `+` / `-` / `0` | 字級放大 / 縮小 / 重設 |
+| `Esc` / `Ctrl+Q` / `⌘Q` | 結束 |
+| `Ctrl` `+` / `-` / `0` | 字級放大 / 縮小 / 重設（Mac 也可用 `⌘`） |
 | `F` | 切換是否顯示粵語原文 |
 | `T` | 切換置頂 |
 | 空白鍵 | 暫停自動捲動（想往上回看時用） |
@@ -182,7 +234,7 @@ $env:ANTHROPIC_API_KEY = "sk-ant-..."
 | 出字太慢 | `[vad] min_silence_ms` 調小（450 → 350） |
 | 對方聲音很小，抓不到 | `[vad] threshold` 調低（0.5 → 0.35） |
 | 會議提示音被當成說話 | `[vad] min_speech_ms` 調大（250 → 400） |
-| 換耳機後收不到聲音 | `[audio] device` 留空白，會自動跟著系統預設裝置 |
+| 換耳機後收不到聲音 | Windows：`[audio] device` 留空白，會自動跟著系統預設裝置。macOS：在選單列音量圖示改選含 BlackHole 的多重輸出裝置 |
 | 想要香港寫法而非台灣用詞 | `[asr] traditional` 改成 `"s2t"` |
 | 開會時 CPU 吃太兇 | `[asr] num_threads` 調小（4 → 2） |
 | 想把粵語原文讀得更清楚 | `[ui] original_font_size` 設成和 `font_size` 一樣 |
@@ -194,10 +246,10 @@ $env:ANTHROPIC_API_KEY = "sk-ant-..."
 
 **方法一：整個資料夾複製 + 跑 setup**
 
-複製專案資料夾（可以不含 `.venv`），在新電腦上執行 `.\setup.ps1`。
-需要網路下載套件與模型，約 5 分鐘。
+複製專案資料夾（可以不含 `.venv`），在新電腦上執行 `.\setup.ps1`（Windows）或
+`./setup.sh`（macOS）。需要網路下載套件與模型，約 5 分鐘。
 
-**方法二：打包成免安裝版（新電腦不需要 Python）**
+**方法二：打包成免安裝版（僅 Windows，新電腦不需要 Python）**
 
 ```powershell
 .\build_portable.ps1 -WithClaude
@@ -227,8 +279,8 @@ $env:ANTHROPIC_API_KEY = "sk-ant-..."
 
 ```
 cantonese-live/
-  setup.ps1              安裝（找/裝 Python、建環境、下載模型）
-  run.ps1                啟動
+  setup.ps1 / setup.sh   安裝（Windows / macOS）
+  run.ps1 / run.sh       啟動（Windows / macOS）
   build_portable.ps1     打包成免安裝版
   config.toml            設定（每個欄位都有註解）
   lexicon_user.txt       你的自訂詞表
@@ -236,6 +288,7 @@ cantonese-live/
   models/                下載的模型（SenseVoice 228MB + Silero VAD 629KB）
   samples/               官方測試音檔
   transcripts/           逐字稿輸出
+  tests/                 單元測試（python -m unittest discover -s tests -t .）
   tools/
     download_models.py   下載模型
     validate_lexicon.py  詞表驗證（改詞表後必跑）
@@ -243,7 +296,11 @@ cantonese-live/
     test_overlay.py      視窗版面檢查
   src/cantonese_live/
     config.py            設定載入
-    audio.py             WASAPI loopback 擷取
+    audio/
+      base.py            共用：混單聲道、重採樣、緩衝
+      windows.py         WASAPI loopback 擷取
+      macos.py           從 BlackHole 錄音 + 收音路徑健檢
+      _coreaudio.py      ctypes 問 CoreAudio 目前輸出裝置
     asr.py               VAD 斷句 + SenseVoice 辨識 + 簡轉繁
     translate/
       lexicon_data.py    粵→普詞表（改這裡之前請先讀檔頭的規則）
@@ -263,5 +320,7 @@ cantonese-live/
 | [SenseVoice-Small](https://github.com/FunAudioLLM/SenseVoice) | 粵語/國語/英日韓 辨識（int8 量化，228MB） |
 | [Silero VAD](https://github.com/snakers4/silero-vad) | 語句切分 |
 | [PyAudioWPatch](https://github.com/s0d3s/PyAudioWPatch) | WASAPI loopback 擷取 |
+| [sounddevice](https://python-sounddevice.readthedocs.io) | macOS 從 BlackHole 錄音（PortAudio） |
+| [BlackHole](https://github.com/ExistentialAudio/BlackHole) | macOS 虛擬音訊裝置，把系統聲音分一路給程式 |
 | [OpenCC](https://github.com/BYVoid/OpenCC) | 簡體轉繁體（台灣用詞） |
 | [soxr](https://github.com/dofuuz/python-soxr) | 48kHz → 16kHz 重採樣 |
