@@ -142,5 +142,44 @@ class CaptureTests(unittest.TestCase):
         self.assertIn("BlackHole 2ch", str(ctx.exception))
 
 
+from cantonese_live.audio._coreaudio import OutputRoute  # noqa: E402
+
+
+class RoutingHintTests(unittest.TestCase):
+    def test_speakers_only_warns_with_device_name(self):
+        route = lambda: OutputRoute("MacBook Pro的揚聲器", False, ())
+        hint = macos.routing_hint(route_fn=route)
+        self.assertIn("MacBook Pro的揚聲器", hint)
+        self.assertIn("沒有經過 BlackHole", hint)
+
+    def test_aggregate_with_blackhole_is_fine(self):
+        route = lambda: OutputRoute("會議（喇叭）", True, ("MacBook Pro的揚聲器", "BlackHole 2ch"))
+        self.assertIsNone(macos.routing_hint(route_fn=route))
+
+    def test_aggregate_without_blackhole_warns(self):
+        route = lambda: OutputRoute("會議（喇叭）", True, ("MacBook Pro的揚聲器", "AirPods"))
+        hint = macos.routing_hint(route_fn=route)
+        self.assertIn("會議（喇叭）", hint)
+        self.assertIn("沒有經過 BlackHole", hint)
+
+    def test_output_is_blackhole_itself(self):
+        route = lambda: OutputRoute("BlackHole 2ch", False, ())
+        hint = macos.routing_hint(route_fn=route)
+        self.assertIn("你自己會聽不到", hint)
+
+    def test_sub_device_name_failure_is_tolerated(self):
+        # 其中一個子裝置名字讀不到（空字串），另一個是 BlackHole → 正常
+        route = lambda: OutputRoute("會議", True, ("", "BlackHole 2ch"))
+        self.assertIsNone(macos.routing_hint(route_fn=route))
+        # 名字全讀不到 → 當作沒有 BlackHole，警告
+        route2 = lambda: OutputRoute("會議", True, ("", ""))
+        self.assertIsNotNone(macos.routing_hint(route_fn=route2))
+
+    def test_probe_exception_is_silenced(self):
+        def boom():
+            raise OSError(-50)
+        self.assertIsNone(macos.routing_hint(route_fn=boom))
+
+
 if __name__ == "__main__":
     unittest.main()

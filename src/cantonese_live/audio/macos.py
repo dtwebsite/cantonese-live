@@ -183,5 +183,21 @@ def open_capture(
 
 
 def routing_hint(route_fn=None) -> str | None:
-    """Task 5 實作。"""
-    return None
+    """系統輸出有沒有經過 BlackHole？有疑慮就回一段說明，正常回 None。
+
+    這是 Mac 上最常見的失敗方式：BlackHole 裝了，但系統輸出沒選到含它的
+    多重輸出裝置，程式就只會收到一片靜音。健檢本身任何失敗都回 None。
+    """
+    try:
+        from . import _coreaudio
+        route = (route_fn or _coreaudio.default_output_route)()
+    except Exception:
+        return None
+
+    if _is_blackhole(route.name):
+        return ("目前系統聲音只送到 BlackHole，你自己會聽不到對方說話。"
+                + _MULTI_OUTPUT_STEPS)
+    if route.is_aggregate and any(_is_blackhole(n) for n in route.sub_names):
+        return None
+    return (f"目前系統輸出是「{route.name or '未知裝置'}」，聲音沒有經過 BlackHole，"
+            f"程式會收到靜音。" + _MULTI_OUTPUT_STEPS)
