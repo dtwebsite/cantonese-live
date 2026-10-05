@@ -5,6 +5,7 @@
 
     python tools\\test_live_capture.py
     python tools\\test_live_capture.py samples\\zh.wav
+    python tools/test_live_capture.py             # macOS 也一樣
 """
 
 from __future__ import annotations
@@ -29,10 +30,20 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def play(path: Path, done: threading.Event) -> None:
-    """用 Windows 內建的播放器把檔案播到預設輸出裝置。"""
+    """把檔案播到系統預設輸出裝置。Windows 用 winsound，macOS 用內建的 afplay。
+
+    在 macOS 上這會經過多重輸出裝置到 BlackHole，所以這個測試驗證的
+    就是完整的收音路徑。
+    """
     try:
-        import winsound
-        winsound.PlaySound(str(path), winsound.SND_FILENAME)
+        if sys.platform == "win32":
+            import winsound
+            winsound.PlaySound(str(path), winsound.SND_FILENAME)
+        elif sys.platform == "darwin":
+            import subprocess
+            subprocess.run(["afplay", str(path)], check=True)
+        else:
+            print("[播放] 這個平台沒有內建播放器，請自行播放該檔案。", file=sys.stderr)
     except Exception as exc:
         print(f"[播放] 失敗：{exc}", file=sys.stderr)
     finally:
@@ -52,7 +63,10 @@ def main() -> int:
     device = resolve_device(cfg.audio.device)
     print(f"收音裝置：{device}")
     print(f"播放檔案：{wav.name}（{duration:.1f} 秒）")
-    print("\n注意：這台電腦的喇叭/耳機音量不能是靜音，否則 loopback 收不到訊號。\n")
+    if sys.platform == "darwin":
+        print("\n注意：系統輸出必須是含 BlackHole 的多重輸出裝置，否則收不到訊號。\n")
+    else:
+        print("\n注意：這台電腦的喇叭/耳機音量不能是靜音，否則 loopback 收不到訊號。\n")
 
     recognizer = Recognizer(cfg)
     translator = build_translator(cfg, normalize=recognizer.to_traditional)
@@ -93,10 +107,15 @@ def main() -> int:
     translator.close()
 
     if peak < 1e-4:
-        print("\n失敗：loopback 收到的是靜音。")
-        print("  1. 確認喇叭/耳機沒有靜音，音量不是 0")
-        print("  2. 確認 Windows 的預設輸出裝置就是你實際在用的那個")
-        print("  3. 用 run.ps1 -List 看看是不是該指定別的裝置")
+        print("\n失敗：收到的是靜音。")
+        if sys.platform == "darwin":
+            print("  1. 確認系統輸出選的是含 BlackHole 的多重輸出裝置（選單列音量圖示）")
+            print("  2. 確認 BlackHole 已安裝：brew install --cask blackhole-2ch")
+            print("  3. 用 ./run.sh --list-devices 看看是不是該指定別的裝置")
+        else:
+            print("  1. 確認喇叭/耳機沒有靜音，音量不是 0")
+            print("  2. 確認 Windows 的預設輸出裝置就是你實際在用的那個")
+            print("  3. 用 run.ps1 -List 看看是不是該指定別的裝置")
         return 1
     if not results:
         print("\n失敗：收到聲音但沒辨識出任何句子。")
