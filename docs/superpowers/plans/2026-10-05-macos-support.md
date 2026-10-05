@@ -167,9 +167,8 @@ class ToMono16kTests(unittest.TestCase):
     def test_resample_48000_stereo_interleaved(self):
         cap = FakeCapture(Device(0, "x", 48000, 2))
         cap._ingest(sine(48000, 1.0, channels=2, interleaved=True))
-        got = np.concatenate([b for b in iter(lambda: cap.read(0.01), None)
-                              if b.size] or [np.empty(0)])
-        self.assertTrue(15000 <= got.size <= 16000, got.size)
+        total = sum(b.size for b in self._drain(cap))
+        self.assertTrue(15000 <= total <= 16000, total)
 
     def test_resample_44100(self):
         cap = FakeCapture(Device(0, "x", 44100, 1))
@@ -1279,7 +1278,7 @@ def routing_hint(route_fn=None) -> str | None:
 - [ ] **Step 4: 跑測試確認通過**
 
 Run: `.venv/bin/python -m unittest tests.test_audio_macos -v`
-Expected: 13 tests `OK`
+Expected: 12 tests `OK`
 
 - [ ] **Step 5: 在真實裝置上列一次**
 
@@ -1532,7 +1531,7 @@ def routing_hint(route_fn=None) -> str | None:
 - [ ] **Step 5: 跑測試確認通過**
 
 Run: `.venv/bin/python -m unittest tests.test_audio_macos -v`
-Expected: 19 tests `OK`
+Expected: 18 tests `OK`
 
 - [ ] **Step 6: 對真機跑一次探測**
 
@@ -1658,7 +1657,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Files:**
 - Modify: `src/cantonese_live/config.py`（`UiConfig.font_family` 預設、新增 `default_font_family`）
 - Modify: `src/cantonese_live/overlay.py`（`_apply_fonts`、`_bind_keys`、模組 docstring）
-- Modify: `config.toml`（`[ui] font_family`）
+- Modify: `config.toml`（`[ui] font_family`、`[audio] device` 註解）
 - Test: `tests/test_config_font.py`
 
 **Interfaces:**
@@ -1756,6 +1755,18 @@ def default_font_family(platform: str | None = None) -> str:
 ```toml
 # 字型。留空 = 自動（Windows 用 Microsoft JhengHei UI，macOS 用 PingFang TC）。
 font_family = ""
+```
+
+`[audio]` 的 device 註解（檔頭第 7 到 12 行）改成兩平台都講到：
+```toml
+[audio]
+# 要錄哪個裝置的聲音。
+#   ""        自動：Windows 跟著「預設輸出裝置」走（換耳機不用改）；
+#             macOS 用 BlackHole（系統輸出要設成含 BlackHole 的多重輸出裝置）
+#   "BenQ"    比對裝置名稱的片段
+#   "12"      直接指定裝置索引
+# 用 run.ps1 -List（Windows）或 ./run.sh --list-devices（macOS）可以看到所有裝置。
+device = ""
 ```
 
 - [ ] **Step 6: 跑測試確認通過**
