@@ -1,6 +1,7 @@
 # 核心（必要）
 sherpa-onnx==1.13.8       # 語音辨識執行環境（ONNX Runtime，CPU）
-PyAudioWPatch==0.2.12.8   # WASAPI loopback 擷取（PyAudio 的 Windows 分支）
+PyAudioWPatch==0.2.12.8; sys_platform == "win32"    # WASAPI loopback 擷取（只有 Windows）
+sounddevice==0.5.6;      sys_platform == "darwin"   # 從 BlackHole 錄音（只有 macOS，內含 PortAudio）
 soxr==1.1.0               # 高品質重採樣 48kHz -> 16kHz
 numpy==2.5.3
 opencc==1.4.2             # 簡體 -> 繁體
