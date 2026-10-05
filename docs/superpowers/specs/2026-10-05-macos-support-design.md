@@ -133,7 +133,7 @@ sounddevice==0.5.6;      sys_platform == "darwin"
 
 ### setup.sh
 
-對應 `setup.ps1` 的五步，用 `#!/bin/bash`，可重複執行：
+對應 `setup.ps1` 的流程再加上 BlackHole 與手動設定指引，用 `#!/bin/bash`，可重複執行：
 
 1. 檢查 Homebrew。沒有就印安裝網址後結束，不代為安裝。
 2. 確保 `python@3.12` 與 `python-tk@3.12` 已裝（與 Windows 同版本，sherpa-onnx、numpy 2.5.3 都有 cp312 wheel，Homebrew 的 Python 沒帶 Tk 所以要另裝）。
