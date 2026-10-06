@@ -40,8 +40,8 @@ cd cantonese-live
 ```
 
 Python 由 [uv](https://docs.astral.sh/uv/) 下載獨立版（含 Tk，不需 sudo，Intel 與 Apple
-Silicon 都支援）。BlackHole 透過 [Homebrew](https://brew.sh) 安裝，那一步會要求輸入
-macOS 密碼；沒有 Homebrew 的話腳本會告訴你去哪裡手動下載。
+Silicon 都支援）。BlackHole 從官方網址下載安裝檔並驗證 sha256 後安裝，那一步會要求輸入
+macOS 密碼。不需要 Homebrew，也不需要 Command Line Tools。
 
 ### 為什麼 Mac 需要 BlackHole
 

@@ -4,7 +4,7 @@ macOS 沒有像 WASAPI loopback 那樣直接錄「喇叭輸出」的開放介面
 BlackHole：使用者把系統輸出設成「多重輸出裝置」（喇叭或 AirPods + BlackHole），
 系統聲音就會同時送到喇叭和 BlackHole，我們再把 BlackHole 當輸入裝置錄下來。
 
-    brew install --cask blackhole-2ch
+    ./setup.sh 會下載安裝（或到 https://existential.audio/blackhole/ 手動下載）
     音訊 MIDI 設定 → ＋ → 建立多重輸出裝置 → 勾喇叭（或 AirPods）和 BlackHole 2ch
     選單列音量圖示 → 選那個多重輸出裝置
 
@@ -26,8 +26,8 @@ BLACKHOLE = "blackhole"
 
 SETUP_HELP = (
     "找不到可以收音的裝置。\n"
-    "macOS 需要 BlackHole 虛擬裝置才能錄到系統聲音：\n"
-    "  brew install --cask blackhole-2ch\n"
+    "macOS 需要 BlackHole 虛擬裝置才能錄到系統聲音，執行 ./setup.sh 會自動下載安裝\n"
+    "（或到 https://existential.audio/blackhole/ 手動下載 BlackHole 2ch）。\n"
     "裝好後在「音訊 MIDI 設定」建一個多重輸出裝置（喇叭 + BlackHole 2ch），\n"
     "並在選單列音量圖示選它。詳見 README 的 macOS 章節。"
 )
@@ -78,8 +78,8 @@ def resolve_device(spec: str = "", query: Callable[[], list[dict]] | None = None
         if not candidates:
             raise AudioError(
                 "找不到 BlackHole 裝置。\n"
-                "macOS 需要它才能錄到系統聲音：\n"
-                "  brew install --cask blackhole-2ch\n"
+                "macOS 需要它才能錄到系統聲音。執行 ./setup.sh 會自動下載安裝，\n"
+                "或到 https://existential.audio/blackhole/ 手動下載 BlackHole 2ch。\n"
                 "裝好後重新執行。如果你用的是別的虛擬音訊裝置，"
                 "請在 config.toml 的 [audio] device 填它的名稱，"
                 "用 --list-devices 查看有哪些。"

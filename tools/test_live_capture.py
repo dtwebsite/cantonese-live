@@ -110,7 +110,7 @@ def main() -> int:
         print("\n失敗：收到的是靜音。")
         if sys.platform == "darwin":
             print("  1. 確認系統輸出選的是含 BlackHole 的多重輸出裝置（選單列音量圖示）")
-            print("  2. 確認 BlackHole 已安裝：brew install --cask blackhole-2ch")
+            print("  2. 確認 BlackHole 已安裝（./setup.sh 會自動下載安裝）")
             print("  3. 用 ./run.sh --list-devices 看看是不是該指定別的裝置")
         else:
             print("  1. 確認喇叭/耳機沒有靜音，音量不是 0")

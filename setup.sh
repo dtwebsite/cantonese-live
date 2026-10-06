@@ -6,7 +6,8 @@
 #
 # 重複執行是安全的 —— 已完成的步驟會跳過。
 # Python 由 uv 管理（獨立版 3.12，內含 Tk，Intel 與 Apple Silicon 都有，不需 sudo）。
-# BlackHole 透過 Homebrew 安裝，那一步會要求輸入 macOS 密碼。
+# BlackHole 直接從官方網址下載安裝檔並驗證 sha256，安裝那一步會要求輸入 macOS 密碼。
+# 不需要 Homebrew，也不需要 Command Line Tools。
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -39,18 +40,21 @@ PY="$(uv python find 3.12)"
 ok "$("$PY" --version)（含 Tk）"
 
 step 2 "BlackHole 虛擬音訊裝置（錄系統聲音用）"
-if command -v brew >/dev/null 2>&1; then
-  if brew list --cask --versions blackhole-2ch >/dev/null 2>&1; then
-    ok "blackhole-2ch 已安裝"
-  else
-    echo "  安裝時會要求輸入 macOS 密碼（驅動要放進 /Library/Audio）。"
-    brew install --cask blackhole-2ch
-    warn "BlackHole 剛裝好。如果稍後找不到裝置，登出再登入一次即可。"
-  fi
+BH_VERSION="0.7.1"
+BH_URL="https://existential.audio/downloads/BlackHole2ch-${BH_VERSION}.pkg"
+BH_SHA256="57b540f27a3e29c37e310e01bee0fdfab76733087e47f997ef9dccf851400dcf"
+if [[ -d /Library/Audio/Plug-Ins/HAL/BlackHole2ch.driver ]]; then
+  ok "BlackHole 2ch 已安裝"
 else
-  warn "找不到 Homebrew，無法自動安裝 BlackHole。"
-  echo "  請到 https://existential.audio/blackhole/ 下載 BlackHole 2ch 安裝檔自行安裝，"
-  echo "  或先安裝 Homebrew（https://brew.sh）再重跑這個腳本。"
+  BH_PKG="$(mktemp -d)/BlackHole2ch-${BH_VERSION}.pkg"
+  echo "  下載 ${BH_URL}"
+  curl -fsSL -o "$BH_PKG" "$BH_URL"
+  echo "${BH_SHA256}  ${BH_PKG}" | shasum -a 256 -c --status \
+    || { echo "  下載的安裝檔 sha256 不符，為安全起見中止。請稍後再試或改手動安裝。"; exit 1; }
+  echo "  安裝時會要求輸入 macOS 密碼（驅動要放進 /Library/Audio）。"
+  sudo installer -pkg "$BH_PKG" -target /
+  rm -f "$BH_PKG"
+  warn "BlackHole 剛裝好。如果稍後找不到裝置，登出再登入一次即可。"
 fi
 
 step 3 "建立虛擬環境 .venv 並安裝套件"

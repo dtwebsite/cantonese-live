@@ -45,7 +45,8 @@ class ResolveDeviceTests(unittest.TestCase):
         with self.assertRaises(AudioError) as ctx:
             macos.resolve_device("", query=no_bh)
         msg = str(ctx.exception)
-        self.assertIn("brew install --cask blackhole-2ch", msg)
+        self.assertIn("./setup.sh", msg)
+        self.assertNotIn("brew", msg)
         self.assertIn("--list-devices", msg)
 
     def test_numeric_index(self):
