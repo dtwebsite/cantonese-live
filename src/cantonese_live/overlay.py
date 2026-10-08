@@ -8,6 +8,7 @@
     Ctrl + / -（Mac 也可 ⌘）       放大 / 縮小字級
     Ctrl + 0                       重設字級
     F                              切換是否顯示粵語原文
+    J                              切換是否顯示粵拼
     T                              切換置頂
     空白鍵                         暫停／繼續捲動（想回看前面幾句時用）
 """
@@ -31,6 +32,7 @@ FG_TRANSLATED = "#f2f4f8"   # 普通話
 # 粵語原文：比譯文暗一階以便區分，但仍然要能直接讀 —— 粵語書面文字
 # 本身就有七八成看得懂，原文常常比譯文更貼近對方的原意。
 FG_ORIGINAL = "#aab4c2"
+FG_JYUTPING = "#7f8a9a"     # 粵拼：再暗一階，是原文的附註
 FG_META = "#5a616c"
 FG_ACCENT = "#5fb3f2"
 FG_WARN = "#e8a33d"
@@ -51,6 +53,7 @@ class Overlay:
         self._queue: queue.Queue[Line] = queue.Queue()
         self._status_queue: queue.Queue[tuple[str, str]] = queue.Queue()
         self._show_original = cfg.show_original
+        self._show_jyutping = cfg.show_jyutping
         self._font_size = cfg.font_size
         self._paused = False
         self._closed = False
@@ -135,6 +138,7 @@ class Overlay:
         self._apply_fonts()
         self.text.tag_configure("translated", foreground=FG_TRANSLATED)
         self.text.tag_configure("original", foreground=FG_ORIGINAL)
+self.text.tag_configure("jyutping", foreground=FG_JYUTPING)
         self.text.tag_configure("meta", foreground=FG_META)
         self.text.tag_configure("notice", foreground=FG_ACCENT)
         self.text.tag_configure("warn", foreground=FG_WARN)
@@ -155,9 +159,11 @@ class Overlay:
         self._font_main = tkfont.Font(family=family, size=self._font_size)
         self._font_small = tkfont.Font(family=family, size=small)
         self._font_meta = tkfont.Font(family=family, size=max(7, small - 2))
+        self._font_jyutping = tkfont.Font(family=family, size=max(8, small - 1))
         self.text.config(font=self._font_main)
         for tag, font in (("translated", self._font_main),
                           ("original", self._font_small),
+                          ("jyutping", self._font_jyutping),
                           ("meta", self._font_meta),
                           ("notice", self._font_small),
                           ("warn", self._font_small),
@@ -176,6 +182,8 @@ class Overlay:
         r.bind("<Control-Key-0>", lambda _e: self._reset_font())
         r.bind("<f>", lambda _e: self._toggle_original())
         r.bind("<F>", lambda _e: self._toggle_original())
+        r.bind("<j>", lambda _e: self._toggle_jyutping())
+        r.bind("<J>", lambda _e: self._toggle_jyutping())
         r.bind("<t>", lambda _e: self._toggle_topmost())
         r.bind("<T>", lambda _e: self._toggle_topmost())
         r.bind("<space>", lambda _e: self._toggle_pause())
@@ -216,6 +224,10 @@ class Overlay:
     def _toggle_original(self) -> None:
         self._show_original = not self._show_original
         self.notice("顯示粵語原文" if self._show_original else "只顯示普通話")
+
+    def _toggle_jyutping(self) -> None:
+        self._show_jyutping = not self._show_jyutping
+        self.notice("顯示粵拼" if self._show_jyutping else "不顯示粵拼")
 
     def _set_topmost(self, on: bool) -> None:
         self._topmost = on
@@ -306,6 +318,8 @@ class Overlay:
 
         if self._show_original and utt.text != tr.text:
             self.text.insert(tk.END, f"{utt.text}\n", "original")
+        if self._show_original and self._show_jyutping and line.jyutping:
+            self.text.insert(tk.END, f"{line.jyutping}\n", "jyutping")
         self.text.insert(tk.END, f"{tr.text}\n", "translated")
 
         meta = f"{_clock(utt.start_s)} · 處理 {line.latency_s:.1f}s"

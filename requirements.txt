@@ -5,6 +5,7 @@ sounddevice==0.5.6;      sys_platform == "darwin"   # 從 BlackHole 錄音（只
 soxr==1.1.0               # 高品質重採樣 48kHz -> 16kHz
 numpy==2.5.3
 opencc==1.4.2             # 簡體 -> 繁體
+ToJyutping==3.2.0         # 粵語原文標註粵拼（純 Python，兩平台通用）
 
 # 選配：engine = "claude" 或 "lexicon+claude" 才需要
 anthropic>=0.49

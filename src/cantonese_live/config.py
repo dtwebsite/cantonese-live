@@ -92,6 +92,7 @@ class UiConfig:
     height: int = 320
     max_entries: int = 40        # 視窗內保留幾句
     show_original: bool = True
+    show_jyutping: bool = True   # 粵語原文下方顯示粵拼（只在顯示原文時出現）
     always_on_top: bool = True
 
     def resolved_font_family(self, platform: str | None = None) -> str:

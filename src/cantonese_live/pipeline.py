@@ -26,6 +26,7 @@ from .config import Config
 from .translate import build_translator
 from .translate.base import Translation
 from .transcript import TranscriptWriter
+from . import jyutping as _jyutping
 
 
 @dataclass
@@ -35,6 +36,7 @@ class Line:
     utterance: Utterance
     translation: Translation
     latency_s: float   # 從「這句講完」到「翻譯出來」的時間
+    jyutping: str = ""  # 粵語原文的粵拼；關閉或套件沒裝時是空字串
 
 
 @dataclass
@@ -86,7 +88,11 @@ class Pipeline:
         transcript_dir: Path | None = None
         if cfg.transcript.enabled:
             transcript_dir = cfg.path(cfg.transcript.dir)
-        self.transcript = TranscriptWriter(transcript_dir, self.translator.name)
+        self._want_jyutping = bool(cfg.ui.show_jyutping) and _jyutping.available()
+        if cfg.ui.show_jyutping and not _jyutping.available():
+            self._on_status("沒有安裝 ToJyutping，這次不顯示粵拼（pip install ToJyutping）")
+        self.transcript = TranscriptWriter(transcript_dir, self.translator.name,
+                                           jyutping=self._want_jyutping)
 
         self.stats = Stats()
         self._context: list[str] = []
@@ -194,6 +200,7 @@ class Pipeline:
         if len(self._context) > 12:
             del self._context[:-12]
 
-        line = Line(utterance=utt, translation=translation, latency_s=latency)
-        self.transcript.write(utt, translation)
+        jp = _jyutping.to_jyutping(utt.text) if self._want_jyutping else ""
+        line = Line(utterance=utt, translation=translation, latency_s=latency, jyutping=jp)
+        self.transcript.write(utt, translation, jp)
         self._on_line(line)

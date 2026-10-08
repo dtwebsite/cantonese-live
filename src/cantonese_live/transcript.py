@@ -21,11 +21,14 @@ class TranscriptWriter:
         directory: Path | None,
         engine: str = "",
         source: str = "",
+        jyutping: bool = False,
     ) -> None:
-        """source 非空時會寫進標題並加到檔名裡（用於事後處理錄音檔）。"""
+        """source 非空時會寫進標題並加到檔名裡（用於事後處理錄音檔）。
+        jyutping 為 True 時表格多一欄粵拼。"""
         self._fh: TextIO | None = None
         self.path: Path | None = None
         self.lines = 0
+        self._jyutping = jyutping
 
         if directory is None:
             return
@@ -42,18 +45,22 @@ class TranscriptWriter:
             f"- 時間：{started:%Y-%m-%d %H:%M}\n"
             f"- 辨識：SenseVoice（粵語）\n"
             f"- 翻譯：{engine or '未設定'}\n\n"
-            f"| 時間 | 粵語原文 | 普通話 |\n|---|---|---|\n"
+            + ("| 時間 | 粵語原文 | 粵拼 | 普通話 |\n|---|---|---|---|\n" if jyutping
+               else "| 時間 | 粵語原文 | 普通話 |\n|---|---|---|\n")
         )
         self._fh.flush()
 
-    def write(self, utt: Utterance, translation: Translation) -> None:
+    def write(self, utt: Utterance, translation: Translation, jyutping: str = "") -> None:
         if self._fh is None:
             return
         stamp = _clock(utt.start_s)
         # 原文和譯文可能含有 | ，不轉義會把 Markdown 表格撐壞
         original = _escape_cell(utt.text)
         translated = _escape_cell(translation.text)
-        self._fh.write(f"| {stamp} | {original} | {translated} |\n")
+        if self._jyutping:
+            self._fh.write(f"| {stamp} | {original} | {_escape_cell(jyutping)} | {translated} |\n")
+        else:
+            self._fh.write(f"| {stamp} | {original} | {translated} |\n")
         self._fh.flush()
         self.lines += 1
 

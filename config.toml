@@ -98,6 +98,8 @@ width = 780
 height = 320
 max_entries = 40          # 視窗內保留幾句
 show_original = true      # 是否同時顯示粵語原文
+# 粵語原文下方顯示粵拼（Jyutping），只在 show_original 開著時出現。視窗內按 J 可即時切換。
+show_jyutping = true
 always_on_top = true
 
 
