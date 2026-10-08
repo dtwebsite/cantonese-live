@@ -138,7 +138,7 @@ class Overlay:
         self._apply_fonts()
         self.text.tag_configure("translated", foreground=FG_TRANSLATED)
         self.text.tag_configure("original", foreground=FG_ORIGINAL)
-self.text.tag_configure("jyutping", foreground=FG_JYUTPING)
+        self.text.tag_configure("jyutping", foreground=FG_JYUTPING)
         self.text.tag_configure("meta", foreground=FG_META)
         self.text.tag_configure("notice", foreground=FG_ACCENT)
         self.text.tag_configure("warn", foreground=FG_WARN)
