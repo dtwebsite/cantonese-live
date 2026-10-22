@@ -4,6 +4,7 @@ PyAudioWPatch==0.2.12.8   # WASAPI loopback 擷取（PyAudio 的 Windows 分支�
 soxr==1.1.0               # 高品質重採樣 48kHz -> 16kHz
 numpy==2.5.3
 opencc==1.4.2             # 簡體 -> 繁體
+ToJyutping==3.2.0         # 粵語原文標註粵拼
 
 # 選配：engine = "claude" 或 "lexicon+claude" 才需要
 anthropic>=0.49

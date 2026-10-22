@@ -96,6 +96,7 @@ width = 780
 height = 320
 max_entries = 40          # 視窗內保留幾句
 show_original = true      # 是否同時顯示粵語原文
+show_jyutping = true      # 是否在原文下方顯示粵拼；浮窗也可按 J 切換
 always_on_top = true
 
 

@@ -174,7 +174,9 @@ def _cmd_file(cfg: Config, path: Path) -> int:
 
     rec = Recognizer(cfg)
     from .translate import build_translator
+    from . import jyutping as _jyutping
     tr = build_translator(cfg, normalize=rec.to_traditional)
+    want_jyutping = bool(cfg.ui.show_jyutping) and _jyutping.available()
 
     utterances = list(rec.feed(audio)) + list(rec.flush())
     if not utterances:
@@ -188,6 +190,7 @@ def _cmd_file(cfg: Config, path: Path) -> int:
         cfg.path(cfg.transcript.dir) if cfg.transcript.enabled else None,
         engine=tr.name,
         source=path.stem,
+        jyutping=want_jyutping,
     )
 
     context: list[str] = []
@@ -195,13 +198,16 @@ def _cmd_file(cfg: Config, path: Path) -> int:
     try:
         for utt in utterances:
             out = tr.translate(utt.text, context)
+            jp = _jyutping.to_jyutping(utt.text) if want_jyutping else ""
             context.append(out.text)
             asr_total += utt.asr_seconds
-            transcript.write(utt, out)
+            transcript.write(utt, out, jp)
 
             print(f"[{utt.start_s:6.2f}s +{utt.duration_s:4.1f}s  "
                   f"RTF {utt.real_time_factor:.3f}]")
             print(f"  粵: {utt.text}")
+            if jp:
+                print(f"  粵拼: {jp}")
             print(f"  普: {out.text}")
             if out.note:
                 print(f"  註: {out.note}")
@@ -240,6 +246,8 @@ def _run_console(cfg: Config) -> int:
         utt, tr = line.utterance, line.translation
         if cfg.ui.show_original and utt.text != tr.text:
             print(f"  {_dim(utt.text)}")
+        if cfg.ui.show_original and line.jyutping:
+            print(f"  {_dim(line.jyutping)}")
         print(f"  {tr.text}")
         suffix = f"{_clock(utt.start_s)} · {line.latency_s:.1f}s"
         if tr.note:
@@ -295,6 +303,8 @@ def _run_overlay(cfg: Config, also_console: bool) -> int:
             utt, tr = line.utterance, line.translation
             if utt.text != tr.text:
                 print(f"  {_dim(utt.text)}")
+            if line.jyutping:
+                print(f"  {_dim(line.jyutping)}")
             print(f"  {tr.text}\n", flush=True)
 
     def on_status(msg: str) -> None:

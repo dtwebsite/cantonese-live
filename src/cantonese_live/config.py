@@ -81,6 +81,7 @@ class UiConfig:
     height: int = 320
     max_entries: int = 40        # 視窗內保留幾句
     show_original: bool = True
+    show_jyutping: bool = True
     always_on_top: bool = True
 
 
